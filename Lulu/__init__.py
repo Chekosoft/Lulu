@@ -69,7 +69,6 @@ class App(object):
     @staticmethod
     def _respond(request):
         response = webob.Response()
-        pprint(App.__routes)
         App.logger.info(request)
         endpoint = App.__routes.match(request.path_info)[0]
         App.logger.info(endpoint)
@@ -97,4 +96,3 @@ class App(object):
             make_server('', 1500, App.serve).serve_forever()
         except KeyboardInterrupt:
             App.logger.info('Lulu stopped supporting')
-        # return App.serve
