@@ -1,4 +1,4 @@
-Shantae
-=======
+Lulu
+====
 
-A web microframework written in Python with a different approach
+A web microframework written in Python with a different approach.
