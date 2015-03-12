@@ -1,0 +1,2 @@
+WebOb==1.4
+wheezy.routing==0.1.157
