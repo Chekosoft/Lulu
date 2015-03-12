@@ -42,4 +42,4 @@ Short answer: No.
 Long answer: Tries to be compatible with Python 3, but it's not assured to work with.
 
 ##License
-The source code of Lulu is open sourced under the MIT license. Open LICENSE.md for a copy of the MIT license.
+The source code of Lulu is released under the [MIT license](http://choosealicense.com/licenses/mit/).
