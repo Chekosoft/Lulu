@@ -60,26 +60,32 @@ class App(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         methods = {k.upper(): v for (k, v) in
-                   inspect.currentframe(1).f_locals.iteritems()
-                   if k.upper() in App.HTTP_VERBS
-                   and v not in self.__previous_frame.values()}
+           inspect.currentframe(1).f_locals.iteritems()
+           if k.upper() in App.HTTP_VERBS
+           and v not in self.__previous_frame.values()}
         endpoint = App.EndPoint(methods, self.alias)
         App.__routes.add_route(self.route, endpoint)
 
     @staticmethod
     def _respond(request):
         response = webob.Response()
-        App.logger.info(request)
-        endpoint = App.__routes.match(request.path_info)[0]
-        App.logger.info(endpoint)
-        if(endpoint is None):
-            raise HTTPErrors.HTTPNotFound
-
-        after_process = endpoint(request.method)(request)
-
-        response.content_type = 'text/plain'
-        response.text = after_process
         response.headers.add('X-Powered-By', 'Lulu')
+        try:
+            endpoint = App.__routes.match(request.path_info)[0]
+            App.logger.info(endpoint)
+            if(endpoint is None):
+                raise HTTPErrors.HTTPNotFound
+
+            result = endpoint(request.method)(request)
+
+
+            if type(result) is basestring:
+                response.text = after_process
+            elif type(result) is dict:
+                response.content_type = result['content_type'] if \
+                    'content_type' in result.keys() else 'text/html'
+                response.body = result['body']
+
         return response
 
     @staticmethod
