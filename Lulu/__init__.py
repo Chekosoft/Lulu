@@ -3,7 +3,7 @@
 import inspect
 import functools
 import webob
-import webob.exc as HTTPErrors
+import webob.exc as exc
 import logging
 from wheezy.routing import PathRouter as Router
 
@@ -31,12 +31,13 @@ class App(object):
 
         @staticmethod
         def get_alias(alias):
-            return App.EndPoint.__aliased[alias] if alias in \
-                App.EndPoint.__aliased.keys() else None
+            return App.EndPoint.__aliased[alias] if \
+                alias in App.EndPoint.__aliased.keys() \
+                else None
 
         def __call__(self, method):
             if method.upper() not in self.methods.keys():
-                raise HTTPErrors.HTTPMethodNotAllowed()
+                raise exc.HTTPMethodNotAllowed()
             else:
                 return self.methods[method]
 
@@ -60,33 +61,36 @@ class App(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         methods = {k.upper(): v for (k, v) in
-           inspect.currentframe(1).f_locals.iteritems()
-           if k.upper() in App.HTTP_VERBS
-           and v not in self.__previous_frame.values()}
+                   inspect.currentframe(1).f_locals.iteritems()
+                   if k.upper() in App.HTTP_VERBS
+                   and v not in self.__previous_frame.values()}
         endpoint = App.EndPoint(methods, self.alias)
         App.__routes.add_route(self.route, endpoint)
 
     @staticmethod
     def _respond(request):
         response = webob.Response()
-        response.headers.add('X-Powered-By', 'Lulu')
         try:
+            response.headers.add('X-Powered-By', 'Lulu')
             endpoint = App.__routes.match(request.path_info)[0]
-            App.logger.info(endpoint)
-            if(endpoint is None):
-                raise HTTPErrors.HTTPNotFound
+
+            if endpoint is None:
+                raise exc.HTTPNotFound()
 
             result = endpoint(request.method)(request)
 
-
-            if type(result) is basestring:
-                response.text = after_process
+            if isinstance(result, basestring):
+                response.text = result
+                response.charset = 'utf8'
             elif type(result) is dict:
                 response.content_type = result['content_type'] if \
                     'content_type' in result.keys() else 'text/html'
                 response.body = result['body']
 
-        return response
+        except exc.HTTPError as e:
+            response = e
+        finally:
+            return response
 
     @staticmethod
     def serve(environ, start_response):
@@ -94,7 +98,7 @@ class App(object):
 
     @staticmethod
     def start():
-        App.logger.setLevel(logging.INFO)
+        App.logger.setLevel(logging.DEBUG)
         App.logger.addHandler(logging.StreamHandler())
         from wsgiref.simple_server import make_server
         try:
