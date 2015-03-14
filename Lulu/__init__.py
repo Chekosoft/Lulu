@@ -97,12 +97,24 @@ class App(object):
         return App._respond(webob.Request(environ))(environ, start_response)
 
     @staticmethod
-    def start():
+    def start(host='', port=1500):
         App.logger.setLevel(logging.DEBUG)
         App.logger.addHandler(logging.StreamHandler())
+
+        welcome_messages = [
+            u'Up we go!',
+            u'Zippy!',
+            u'Vroom vroom!',
+            u'Delightify!'
+        ]
+
         from wsgiref.simple_server import make_server
+        from random import choice
         try:
-            App.logger.info('Lulu is supporting in localhost:1500')
-            make_server('', 1500, App.serve).serve_forever()
+            if host == '':
+                host = '127.0.0.1'
+            App.logger.info('%s Lulu is supporting in %s:%d',
+                choice(welcome_messages), host, port)
+            make_server(host, port, App.serve).serve_forever()
         except KeyboardInterrupt:
             App.logger.info('Lulu stopped supporting')
