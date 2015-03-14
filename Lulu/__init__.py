@@ -44,11 +44,11 @@ class App(object):
     def __init__(self, route, alias):
         if not isinstance(route, unicode):
             raise TypeError(
-                u'Route must be an Unicode string'
+                u'Route endpoint must be an unicode string'
             )
         if App.EndPoint.get_alias(alias) is not None:
             raise Exception(
-                u'URL alias already defined'
+                u'Route alias already defined'
             )
 
         self.alias = alias

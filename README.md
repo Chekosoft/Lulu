@@ -6,8 +6,12 @@ Another web microframework for Python.
 ##Description
 Lulu is a Python web microframework inspired by [Cuba](http://github.com/soveran/cuba), a microframework for Ruby.
 
-##Not for Production (yet)
-Lulu is still a very immature project. Lacking a lot of security features and testing. Maybe in the future it will be a production-grade library. But for now, __do not__ use it in production.
+##Not for using (yet)
+Lulu is still a very immature project. Lacking a lot of security features and testing.
+It will be available on PyPI when it's ready for use.
+
+##Still, how can I install Lulu?
+Just download the latest master, copy the Lulu folder and install it's dependencies using `pip install -r requirements.txt`.
 
 ##Another framework?
 _(or how Lulu tries to be different from the rest)_
@@ -30,13 +34,17 @@ with Lulu(u'/', u'index'):
     return u'Yup, that tasted purple.'
 
 if __name__ == '__main__':
-    Lulu.start()
+    Lulu.start(host='0.0.0.0', port=1337)
 
 ```
 
-On script execution. Lulu will begin to listen to port 1500.
+On script execution (`python example.py`). Lulu will spawn a WSGIref server for development, listening to 0.0.0.0:1337. The default values for host and port are localhost:1500.
 
-Declaring functions with names other than HTTP methods (GET, POST, PUT, etc) inside the endpoint block will cause an exception.
+Declaring functions with names other than HTTP methods (GET, POST, PUT, etc) inside the endpoint block will be ignored.
+
+If you want to serve applications using a WSGI server, for example Gunicorn, you need to point to the Lulu.serve method.
+
+_Example_: `gunicorn example:Lulu.serve`
 
 ##Dependencies
 The only two dependencies (for now) are `webob` and `wheezy.routing`. Got really confused trying to understand WSGI and too lazy to write a router.
@@ -45,6 +53,13 @@ The only two dependencies (for now) are `webob` and `wheezy.routing`. Got really
 Short answer: No.
 
 Long answer: Tries to be compatible with Python 3, but it's not assured to work with.
+
+##TODO
+* Proper routing.
+* Middleware support.
+* Session handling.
+* Cookie handling.
+* Automated testing.
 
 ##License
 The source code of Lulu is released under the [MIT license](http://choosealicense.com/licenses/mit/).
