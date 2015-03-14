@@ -44,7 +44,7 @@ class App(object):
     def __init__(self, route, alias):
         if not isinstance(route, unicode):
             raise TypeError(
-                u'Router must be an Unicode string'
+                u'Route must be an Unicode string'
             )
         if App.EndPoint.get_alias(alias) is not None:
             raise Exception(
@@ -56,14 +56,14 @@ class App(object):
 
     def __enter__(self):
         self.__previous_frame = {k.upper(): v for (k, v) in
-                                 inspect.currentframe(1).f_locals.iteritems()
-                                 if k.upper() in App.HTTP_VERBS}
+            inspect.currentframe(1).f_locals.iteritems()
+            if k.upper() in App.HTTP_VERBS}
 
     def __exit__(self, exc_type, exc_value, traceback):
         methods = {k.upper(): v for (k, v) in
-                   inspect.currentframe(1).f_locals.iteritems()
-                   if k.upper() in App.HTTP_VERBS
-                   and v not in self.__previous_frame.values()}
+           inspect.currentframe(1).f_locals.iteritems()
+           if k.upper() in App.HTTP_VERBS
+           and v not in self.__previous_frame.values()}
         endpoint = App.EndPoint(methods, self.alias)
         App.__routes.add_route(self.route, endpoint)
 
