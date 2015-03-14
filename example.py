@@ -7,4 +7,6 @@ with Lulu(u'/', u'index'):
   def get(request):
     return u'Yup, that tasted purple.'
 
-Lulu.start()
+
+if __name__ == '__main__':
+    Lulu.start()

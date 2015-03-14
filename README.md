@@ -20,13 +20,18 @@ The idea of using `with` as a way to write closures (which Cuba heavily relies o
 
 ##A small example
 ```python
+# *-* coding: utf-8 *-*
+
 from Lulu import App as Lulu
 
-with Lulu(u'/', 'index'):
-    def get(request):
-        return u'Yup, that tasted purple'
 
-Lulu.start()
+with Lulu(u'/', u'index'):
+  def get(request):
+    return u'Yup, that tasted purple.'
+
+if __name__ == '__main__':
+    Lulu.start()
+
 ```
 
 On script execution. Lulu will begin to listen to port 1500.
