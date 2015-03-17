@@ -30,11 +30,18 @@ from Lulu import App as Lulu
 
 
 with Lulu(u'/', u'index'):
-  def get(request):
-    return u'Yup, that tasted purple.'
+    def get(request):
+        Lulu.logger.info('Route Name is %s', request.route_params['route_name'])
+        return u'Yup, that tasted purple.'
+
+#How Lulu handles named parameters
+with Lulu(u'/{name:word}', u'name'):
+    def get(request):
+        Lulu.logger.info('Route Name is %s', request.route_params['route_name'])
+        return u'Hi, %s' % request.route_params['name']
 
 if __name__ == '__main__':
-    Lulu.start(host='0.0.0.0', port=1337)
+    Lulu.start()
 
 ```
 
@@ -60,6 +67,7 @@ Long answer: Tries to be compatible with Python 3, but it's not assured to work 
 * Session handling.
 * Cookie handling.
 * Automated testing.
+* `with` nesting for clearer URLs.
 
 ##License
 The source code of Lulu is released under the [MIT license](http://choosealicense.com/licenses/mit/).
