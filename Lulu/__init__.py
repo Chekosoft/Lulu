@@ -56,28 +56,34 @@ class App(object):
 
     def __enter__(self):
         self.__previous_frame = {k.upper(): v for (k, v) in
-            inspect.currentframe(1).f_locals.iteritems()
-            if k.upper() in App.HTTP_VERBS}
+                                 inspect.currentframe(1).f_locals.iteritems()
+                                 if k.upper() in App.HTTP_VERBS}
 
     def __exit__(self, exc_type, exc_value, traceback):
         methods = {k.upper(): v for (k, v) in
-           inspect.currentframe(1).f_locals.iteritems()
-           if k.upper() in App.HTTP_VERBS
-           and v not in self.__previous_frame.values()}
+                   inspect.currentframe(1).f_locals.iteritems()
+                   if k.upper() in App.HTTP_VERBS
+                   and v not in self.__previous_frame.values()}
         endpoint = App.EndPoint(methods, self.alias)
-        App.__routes.add_route(self.route, endpoint)
+        App.__routes.add_route(self.route, endpoint, name=self.alias)
 
     @staticmethod
     def _respond(request):
         response = webob.Response()
         try:
             response.headers.add('X-Powered-By', 'Lulu')
-            endpoint = App.__routes.match(request.path_info)[0]
+            path_response = App.__routes.match(request.path_info)
+            endpoint = path_response[0]
+            route_params = path_response[1]
 
             if endpoint is None:
                 raise exc.HTTPNotFound()
 
-            result = endpoint(request.method)(request)
+            request.route_params = route_params
+            try:
+                result = endpoint(request.method)(request)
+            except e:
+                raise exc.HTTPServerError()
 
             if isinstance(result, basestring):
                 response.text = result
@@ -111,10 +117,9 @@ class App(object):
         from wsgiref.simple_server import make_server
         from random import choice
         try:
-            if host == '':
-                host = '127.0.0.1'
+            host = '127.0.0.1' if host == '' else host
             App.logger.info('%s Lulu is supporting in %s:%d',
-                choice(welcome_messages), host, port)
+                            choice(welcome_messages), host, port)
             make_server(host, port, App.serve).serve_forever()
         except KeyboardInterrupt:
             App.logger.info('Lulu stopped supporting')
