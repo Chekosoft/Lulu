@@ -7,8 +7,7 @@ Another web microframework for Python.
 Lulu is a Python web microframework inspired by [Cuba](http://github.com/soveran/cuba), a microframework for Ruby.
 
 ##Not for using (yet)
-Lulu is still a very immature project. Lacking a lot of security features and testing.
-It will be available on PyPI when it's ready for use.
+Lulu is still a very immature project. So, it's not ready for application development. It will be available on PyPI _when it's done_.
 
 ##Still, how can I install Lulu?
 Just download the latest master, copy the Lulu folder and install it's dependencies using `pip install -r requirements.txt`.
