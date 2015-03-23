@@ -4,6 +4,7 @@ import inspect
 import functools
 import webob
 import webob.exc as exc
+import webob.dec as dec
 import logging
 from wheezy.routing import PathRouter as Router
 
@@ -67,18 +68,19 @@ class App(object):
         endpoint = App.EndPoint(methods, self.alias)
         App.__routes.add_route(self.route, endpoint, name=self.alias)
 
-    @staticmethod
-    def _respond(request):
+    @classmethod
+    def _respond(cls, request):
         response = webob.Response()
         try:
             response.headers.add('X-Powered-By', 'Lulu')
-            path_response = App.__routes.match(request.path_info)
+            path_response = cls.__routes.match(request.path_info)
             endpoint = path_response[0]
             route_params = path_response[1]
 
             if endpoint is None:
                 raise exc.HTTPNotFound()
 
+            #todo: check dis
             request.route_params = route_params
             try:
                 result = endpoint(request.method)(request)
@@ -99,13 +101,14 @@ class App(object):
             return response
 
     @staticmethod
-    def serve(environ, start_response):
-        return App._respond(webob.Request(environ))(environ, start_response)
+    @dec.wsgify
+    def serve(request):
+        return App._respond(request)
 
-    @staticmethod
-    def start(host='', port=1500):
-        App.logger.setLevel(logging.DEBUG)
-        App.logger.addHandler(logging.StreamHandler())
+    @classmethod
+    def start(cls, host='', port=1500):
+        cls.logger.setLevel(logging.DEBUG)
+        cls.logger.addHandler(logging.StreamHandler())
 
         welcome_messages = [
             u'Up we go!',
@@ -118,8 +121,8 @@ class App(object):
         from random import choice
         try:
             host = '127.0.0.1' if host == '' else host
-            App.logger.info('%s Lulu is supporting in %s:%d',
+            cls.logger.info('%s Lulu is supporting in %s:%d',
                             choice(welcome_messages), host, port)
-            make_server(host, port, App.serve).serve_forever()
+            make_server(host, port, cls.serve).serve_forever()
         except KeyboardInterrupt:
-            App.logger.info('Lulu stopped supporting')
+            cls.logger.info('Lulu stopped supporting')
