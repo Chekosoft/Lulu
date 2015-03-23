@@ -40,7 +40,7 @@ with Lulu(u'/{name:word}', u'name'):
         return u'Hi, %s' % request.route_params['name']
 
 if __name__ == '__main__':
-    Lulu.start()
+    Lulu.start(host='0.0.0.0', port=1W337)
 
 ```
 
