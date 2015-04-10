@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
 ```
 
-On script execution (`python example.py`). Lulu will spawn a WSGIref server for development, listening to 0.0.0.0:1337. The default values for host and port are localhost:1500.
+On script execution (`python example.py`). Lulu will spawn a WSGIref server for development listening to requests at localhost:1500.
 
 Declaring functions with names other than HTTP methods (GET, POST, PUT, etc) inside the endpoint block will be ignored.
 
