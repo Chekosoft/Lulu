@@ -7,12 +7,32 @@ import logging
 import webob
 import webob.exc as exc
 import webob.dec as dec
+from frozendict import frozendict
 from wheezy.routing import PathRouter as Router
+from beaker.session import SessionObject
 
 
 _logger = logging.getLogger('Lulu')
 _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.StreamHandler())
+
+
+_default_configuration = frozendict({
+    'session.encrypt_key': None,
+    'session.cookie_expires': True,
+    'session.cookie_domain': None,
+    'session.cookie_path': '/',
+    'session.httponly': False,
+    'session.key': 'lulu.session',
+    'session.data_dir': None,
+    'session.invalidate_corrupt': False,
+    'session.secure': None,
+    'session.secret': None,
+    'session.timeout': None,
+    'session.type': None,
+    'session.validate_key': None,
+    'show_x_powered_by': True,
+})
 
 
 class _EndPoint(object):
@@ -38,8 +58,6 @@ class _EndPoint(object):
         else:
             return self.methods[method]
 
-""" The Application class. Used to define routes when objects are built. """
-
 
 class App(object):
 
@@ -47,7 +65,8 @@ class App(object):
     __routes = Router()
 
     logger = _logger
-    session = Session()
+
+    config = _default_configuration.copy()
 
     def __init__(self, route, alias):
         if not isinstance(route, unicode):
@@ -56,7 +75,7 @@ class App(object):
             )
         if _EndPoint.get_alias(alias) is not None:
             raise Exception(
-                u'Route alias already defined'
+                u'Route alias %s already defined' % alias
             )
 
         self.alias = alias
@@ -77,9 +96,7 @@ class App(object):
 
     @classmethod
     def _respond(cls, request):
-        response = webob.Response()
         try:
-            response.headers.add('X-Powered-By', 'Lulu')
             path_response = cls.__routes.match(request.path_info)
             endpoint = path_response[0]
             route_params = path_response[1]
@@ -89,10 +106,31 @@ class App(object):
 
             request.route_params = route_params
             request.path_for = cls.__routes.path_for
+            session = SessionObject(request.environ,
+                                    **{k[8:]: v for (k, v) in
+                                       cls.config.iteritems() if
+                                       k.startswith('session.')}
+                                    )
+            request.session = session
+
             try:
                 result = endpoint(request.method)(request)
             except:
                 raise exc.HTTPServerError()
+
+            response = webob.Response()
+
+            if session.accessed():
+                if not session.dirty():
+                    session.save()
+                session.persist()
+                cookie = session.__dict__['_headers']['cookie_out'] if \
+                    session.__dict__['_headers']['set_cookie'] else None
+                if cookie:
+                    response.headers.add('Set-Cookie', cookie)
+
+            if cls.config['show_x_powered_by']:
+                response.headers.add('X-Powered-By', 'Lulu')
 
             if isinstance(result, basestring):
                 response.text = result
@@ -102,10 +140,9 @@ class App(object):
                     'content_type' in result.keys() else 'text/html'
                 response.body = result['body']
 
-        except exc.HTTPError as e:
-            response = e
-        finally:
             return response
+        except exc.HTTPError as e:
+            return e
 
     @staticmethod
     @dec.wsgify
