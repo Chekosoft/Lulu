@@ -17,7 +17,8 @@ _logger.setLevel(logging.DEBUG)
 _logger.addHandler(logging.StreamHandler())
 
 
-_default_configuration = frozendict({
+_default_configuration = {
+    'debug': False,
     'session.encrypt_key': None,
     'session.cookie_expires': True,
     'session.cookie_domain': None,
@@ -32,7 +33,7 @@ _default_configuration = frozendict({
     'session.type': None,
     'session.validate_key': None,
     'show_x_powered_by': True,
-})
+}
 
 
 class _EndPoint(object):
@@ -62,13 +63,13 @@ class _EndPoint(object):
 class _Request(object):
 
     def __init__(self, **kwargs):
-        self.session = kwargs['session'],
-        self.route_params = kwargs['route_params'],
-        self.path_for = kwargs['path_for'],
+        self.session = kwargs['session']
+        self.route_params = kwargs['route_params']
+        self.path_for = kwargs['path_for']
         self.raw = kwargs['raw']
 
-    def __set__(self, name, val):
-        raise Exception('Request properties cannot be changed')
+    def __set__(self, name, value):
+        raise Exception('Request data cannot be changed')
 
 
 class App(object):
@@ -78,10 +79,8 @@ class App(object):
 
     logger = _logger
 
-    config = _default_configuration.copy()
-    session_config = {k[8:]: v for (k, v) in
-                       config.iteritems() if
-                       k.startswith('session.')}
+    __config = _default_configuration.copy()
+    __session_config = None
 
     def __init__(self, route, alias):
         if not isinstance(route, unicode):
@@ -110,6 +109,22 @@ class App(object):
         App.__routes.add_route(self.route, endpoint, name=self.alias)
 
     @classmethod
+    def config(cls, kwargs):
+        for key, value in kwargs.iteritems():
+            if key in cls.__config:
+                cls.__config[key] = value
+            else:
+                raise Exception('Custom configuration cannot be added')
+
+    @classmethod
+    def __get_session_config(cls):
+        if cls.__session_config is None:
+            cls.__session_config = {k[8:]: v for (k, v) in
+                                    cls.__config.iteritems() if
+                                    k.startswith('session.')}
+        return cls.__session_config
+
+    @classmethod
     def _respond(cls, request):
         try:
             path_response = cls.__routes.match(request.path_info)
@@ -117,21 +132,18 @@ class App(object):
                 raise exc.HTTPNotFound()
 
             endpoint = path_response[0]
-            session = SessionObject(request.environ,
-                                    **(cls._session_config)
-                                    )
-
-            wrapped_request = _Request(
-                session=session,
-                raw=request,
-                route_params=path_response[1],
-                path_for=cls.__routes.path_for
-            )
+            session = SessionObject(request.environ, **cls.__get_session_config())
 
             try:
-                result = endpoint(request.method)(wrapped_request)
+                method = endpoint(request.method)
+                result = method(_Request(
+                    session=session,
+                    route_params=path_response[1],
+                    path_for=cls.__routes.path_for,
+                    raw=request
+                ))
+
             except Exception as e:
-                print e
                 raise exc.HTTPServerError()
 
             response = webob.Response()
@@ -145,7 +157,7 @@ class App(object):
                 if cookie:
                     response.headers.add('Set-Cookie', cookie)
 
-            if cls.config['show_x_powered_by']:
+            if cls.__config['show_x_powered_by']:
                 response.headers.add('X-Powered-By', 'Lulu')
 
             if isinstance(result, basestring):
