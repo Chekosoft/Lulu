@@ -59,6 +59,18 @@ class _EndPoint(object):
             return self.methods[method]
 
 
+class _Request(object):
+
+    def __init__(self, **kwargs):
+        self.session = kwargs['session'],
+        self.route_params = kwargs['route_params'],
+        self.path_for = kwargs['path_for'],
+        self.raw = kwargs['raw']
+
+    def __set__(self, name, val):
+        raise Exception('Request properties cannot be changed')
+
+
 class App(object):
 
     HTTP_VERBS = frozenset([u'GET', u'POST', u'PUT', u'PATCH', u'DELETE'])
@@ -67,6 +79,9 @@ class App(object):
     logger = _logger
 
     config = _default_configuration.copy()
+    session_config = {k[8:]: v for (k, v) in
+                       config.iteritems() if
+                       k.startswith('session.')}
 
     def __init__(self, route, alias):
         if not isinstance(route, unicode):
@@ -98,24 +113,25 @@ class App(object):
     def _respond(cls, request):
         try:
             path_response = cls.__routes.match(request.path_info)
-            endpoint = path_response[0]
-            route_params = path_response[1]
-
-            if endpoint is None:
+            if path_response[0] is None:
                 raise exc.HTTPNotFound()
 
-            request.route_params = route_params
-            request.path_for = cls.__routes.path_for
+            endpoint = path_response[0]
             session = SessionObject(request.environ,
-                                    **{k[8:]: v for (k, v) in
-                                       cls.config.iteritems() if
-                                       k.startswith('session.')}
+                                    **(cls._session_config)
                                     )
-            request.session = session
+
+            wrapped_request = _Request(
+                session=session,
+                raw=request,
+                route_params=path_response[1],
+                path_for=cls.__routes.path_for
+            )
 
             try:
-                result = endpoint(request.method)(request)
-            except:
+                result = endpoint(request.method)(wrapped_request)
+            except Exception as e:
+                print e
                 raise exc.HTTPServerError()
 
             response = webob.Response()
