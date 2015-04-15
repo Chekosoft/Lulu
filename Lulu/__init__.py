@@ -7,10 +7,12 @@ import logging
 import webob
 import webob.exc as exc
 import webob.dec as dec
-from frozendict import frozendict
 from wheezy.routing import PathRouter as Router
 from beaker.session import SessionObject
 
+
+"""Lulu current version string"""
+_VERSION = '0.0.1'
 
 _logger = logging.getLogger('Lulu')
 _logger.setLevel(logging.DEBUG)
@@ -77,8 +79,6 @@ class App(object):
     HTTP_VERBS = frozenset([u'GET', u'POST', u'PUT', u'PATCH', u'DELETE'])
     __routes = Router()
 
-    logger = _logger
-
     __config = _default_configuration.copy()
     __session_config = None
 
@@ -132,16 +132,19 @@ class App(object):
                 raise exc.HTTPNotFound()
 
             endpoint = path_response[0]
-            session = SessionObject(request.environ, **cls.__get_session_config())
+            session = SessionObject(
+                request.environ, **cls.__get_session_config())
 
             try:
                 method = endpoint(request.method)
-                result = method(_Request(
-                    session=session,
-                    route_params=path_response[1],
-                    path_for=cls.__routes.path_for,
-                    raw=request
-                ))
+                result = method(
+                    _Request(
+                        session=session,
+                        route_params=path_response[1],
+                        path_for=cls.__routes.path_for,
+                        raw=request
+                    )
+                )
 
             except Exception as e:
                 raise exc.HTTPServerError()
@@ -158,7 +161,8 @@ class App(object):
                     response.headers.add('Set-Cookie', cookie)
 
             if cls.__config['show_x_powered_by']:
-                response.headers.add('X-Powered-By', 'Lulu')
+                response.headers.add(
+                    'X-Powered-By', 'Lulu version %s' % _VERSION)
 
             if isinstance(result, basestring):
                 response.text = result
