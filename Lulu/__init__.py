@@ -44,7 +44,7 @@ class _EndPoint(object):
 
     def __init__(self, methods, alias):
         if(not any(w in App.HTTP_VERBS for w in methods.keys())):
-            raise Exception(
+            raise KeyError(
                 u'This endpoint needs at least one HTTP verb associated')
         self.methods = methods
         _EndPoint.__aliased[alias] = self
@@ -88,8 +88,8 @@ class App(object):
                 u'Route endpoint must be an unicode string'
             )
         if _EndPoint.get_alias(alias) is not None:
-            raise Exception(
-                u'Route alias %s already defined' % alias
+            raise RuntimeError(
+                u'Route alias {0} already defined'.format(alias)
             )
 
         self.alias = alias
@@ -119,7 +119,7 @@ class App(object):
     @classmethod
     def __get_session_config(cls):
         if cls.__session_config is None:
-            cls.__session_config = {k[8:]: v for (k, v) in
+            cls.__session_config = {k.replace(u'session.', ''): v for (k, v) in
                                     cls.__config.iteritems() if
                                     k.startswith('session.')}
         return cls.__session_config
